@@ -1,0 +1,19 @@
+﻿---
+ID: "aeab1e14-74b2-465c-8c21-af54eb3861e9"
+Parent: "c14b6289-8ac2-439c-9e5b-40de9f820c3f"
+Template: "c14b6289-8ac2-439c-9e5b-40de9f820c3f"
+Path: /sitecore/templates/Feature/Redirects/Redirect/__Standard Values
+DB: master
+SharedFields:
+- ID: "f1a1fe9e-a60c-4ddb-a3a0-bb5b29fe732e"
+  Hint: __Renderings
+  Type: layout
+  Value: 
+Languages:
+- Language: en
+  Versions:
+  - Version: 1
+    Fields:
+    - ID: "25bed78c-4957-4165-998a-ca1b52f67497"
+      Hint: __Created
+      Value: 20120111T082300Z

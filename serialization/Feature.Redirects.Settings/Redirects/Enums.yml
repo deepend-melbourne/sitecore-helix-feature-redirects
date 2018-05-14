@@ -1,0 +1,18 @@
+﻿---
+ID: "175a5486-fdd1-4baf-9529-43b79c792c5d"
+Parent: "cd9f3727-f7a9-4fd5-a1f0-445e29aa199a"
+Template: "a87a00b1-e6db-45ab-8b54-636fec3b5523"
+Path: /sitecore/system/Settings/Feature/Redirects/Enums
+DB: master
+Languages:
+- Language: en
+  Versions:
+  - Version: 1
+    Fields:
+    - ID: "25bed78c-4957-4165-998a-ca1b52f67497"
+      Hint: __Created
+      Value: 20160415T141813Z
+    - ID: "5dd74568-4d4b-44c1-b513-0af5f4cda34f"
+      Hint: __Created by
+      Value: |
+        sitecore\admin
