@@ -1,13 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Web;
+using Sitecore.Diagnostics;
 
-namespace Sitecore.Feature.Redirects.Repositories
+namespace Sitecore.Feature.Redirects
 {
-    public class RedirectsRepository : IRedirectsRepository
+    internal static class RedirectsCache
     {
-        public void Reset()
+        const string LoggerName = "Sitecore.Feature.Redirects";
+
+        public static void Reset()
         {
+            Log.Info("RedirectMapCacheClearer clearing redirect map cache.", LoggerName);
+
             var list = new List<string>();
 
             var enumerator = HttpRuntime.Cache.GetEnumerator();
@@ -24,6 +29,8 @@ namespace Sitecore.Feature.Redirects.Repositories
             {
                 HttpRuntime.Cache.Remove(key);
             }
+
+            Log.Info("RedirectMapCacheClearer done.", LoggerName);
         }
     }
 }

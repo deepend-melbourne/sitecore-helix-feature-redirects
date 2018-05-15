@@ -1,9 +1,9 @@
-using Sitecore.Pipelines.HttpRequest;
-using Sitecore.Foundation.SitecoreExtensions.Extensions;
-using Sitecore.StringExtensions;
 using System.Web;
 using Sitecore.Data.Fields;
+using Sitecore.Data.Items;
+using Sitecore.Foundation.SitecoreExtensions.Extensions;
 using Sitecore.Links;
+using Sitecore.Pipelines.HttpRequest;
 using Sitecore.Sites;
 
 namespace Sitecore.Feature.Redirects.Pipelines.HttpRequestBegin
@@ -13,14 +13,16 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequestBegin
         public override void Process(HttpRequestArgs args)
         {
             var item = Context.Item;
-            if (Context.Database == null || item == null)
+
+            if (item == null)
             {
                 return;
             }
 
             if (item.IsDerived(Templates.Redirect.ID))
             {
-                var redirectUrl = this.GetRedirectUrl();
+                var redirectUrl = GetRedirectUrl(item);
+
                 if (!string.IsNullOrEmpty(redirectUrl))
                 {
                     HttpContext.Current.Response.Redirect(redirectUrl, true);
@@ -29,9 +31,9 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequestBegin
             }
         }
 
-        protected virtual string GetRedirectUrl()
+        static string GetRedirectUrl(Item item)
         {
-            LinkField linkField = Context.Item.Fields[Templates.Redirect.Fields.RedirectUrl];
+            var linkField = (LinkField)item.Fields[Templates.Redirect.Fields.RedirectUrl];
 
             if (linkField != null)
             {
@@ -41,13 +43,15 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequestBegin
                     var defaultOptions = UrlOptions.DefaultOptions;
                     defaultOptions.Site = SiteContextFactory.GetSiteContext(siteInfo.Name);
                     defaultOptions.AlwaysIncludeServerUrl = true;
-                    return LinkManager.GetItemUrl(linkField.TargetItem, defaultOptions) + (string.IsNullOrEmpty(linkField.QueryString) ? "" : ("?" + linkField.QueryString));
+
+                    return LinkManager.GetItemUrl(linkField.TargetItem, defaultOptions) + (string.IsNullOrEmpty(linkField.QueryString) ? string.Empty : $"?{linkField.QueryString}");
                 }
                 else
                 {
                     return linkField.Url;
                 }
             }
+
             return null;
         }
     }

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
 {
@@ -11,6 +12,8 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
 
     public class RedirectMapping
     {
+        Regex _regex;
+
         public RedirectType RedirectType { get; set; }
 
         public bool PreserveQueryString { get; set; }
@@ -25,19 +28,34 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
         {
             get
             {
-                if (!this.IsRegex)
+                if (!IsRegex)
                 {
                     return null;
                 }
-                Regex result;
-                if ((result = this._regex) == null)
-                {
-                    result = (this._regex = new Regex(this.Pattern, RegexOptions.IgnoreCase));
-                }
-                return result;
+
+                return _regex = _regex ?? new Regex(Pattern, RegexOptions.IgnoreCase);
             }
         }
 
-        private Regex _regex;
+        public string GetTargetUrl(HttpContext httpContext, string input)
+        {
+            var target = Target;
+            if (IsRegex)
+            {
+                target = Regex.Replace(input, target);
+            }
+
+            if (PreserveQueryString)
+            {
+                target += httpContext.Request.Url.Query;
+            }
+
+            if (!string.IsNullOrEmpty(Context.Site.VirtualFolder))
+            {
+                target = StringUtil.EnsurePostfix('/', Context.Site.VirtualFolder) + target.TrimStart(new char[] { '/' });
+            }
+
+            return target;
+        }
     }
 }

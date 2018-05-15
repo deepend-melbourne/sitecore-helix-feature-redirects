@@ -1,11 +1,8 @@
+using System;
 using Sitecore.Data.Events;
 using Sitecore.Data.Items;
-using Sitecore.DependencyInjection;
 using Sitecore.Diagnostics;
-using Sitecore.Events;
-using Sitecore.Feature.Redirects.Repositories;
 using Sitecore.Foundation.SitecoreExtensions;
-using System;
 
 namespace Sitecore.Feature.Redirects.EventHandlers
 {
@@ -13,35 +10,31 @@ namespace Sitecore.Feature.Redirects.EventHandlers
     {
         public void ClearCache(object sender, EventArgs args)
         {
-            Assert.ArgumentNotNull(sender, "sender");
-            Assert.ArgumentNotNull(args, "args");
-            Log.Info("RedirectMapCacheClearer clearing redirect map cache.", this);
-            (ServiceLocator.ServiceProvider.GetService(typeof(IRedirectsRepository)) as IRedirectsRepository).Reset();
-            Log.Info("RedirectMapCacheClearer done.", this);
+            RedirectsCache.Reset();
         }
 
         public void OnItemSaved(object sender, EventArgs args)
         {
-            Assert.ArgumentNotNull(sender, "sender");
-            Assert.ArgumentNotNull(args, "args");
-            var item = Event.ExtractParameter(args, 0) as Item;
-            if (item == null || !item.TemplateID.Equals(Templates.RedirectMap.ID) || JobsHelper.IsPublishing())
-            {
-                return;
-            }
-            this.ClearCache(sender, args);
+            Assert.ArgumentNotNull(sender, nameof(sender));
+            Assert.ArgumentNotNull(args, nameof(args));
+
+            CheckClearCache((args as ItemSavedEventArgs)?.Item);
         }
 
         public void OnItemSavedRemote(object sender, EventArgs args)
         {
-            Assert.ArgumentNotNull(sender, "sender");
-            Assert.ArgumentNotNull(args, "args");
-            var itemSavedRemoteEventArgs = args as ItemSavedRemoteEventArgs;
-            if (itemSavedRemoteEventArgs == null || itemSavedRemoteEventArgs.Item == null || !itemSavedRemoteEventArgs.Item.TemplateID.Equals(Templates.RedirectMap.ID) || JobsHelper.IsPublishing())
+            Assert.ArgumentNotNull(sender, nameof(sender));
+            Assert.ArgumentNotNull(args, nameof(args));
+
+            CheckClearCache((args as ItemSavedRemoteEventArgs)?.Item);
+        }
+
+        void CheckClearCache(Item item)
+        {
+            if (item != null && item.TemplateID.Equals(Templates.RedirectMap.ID) && !JobsHelper.IsPublishing())
             {
-                return;
+                RedirectsCache.Reset();
             }
-            this.ClearCache(sender, args);
         }
     }
 }

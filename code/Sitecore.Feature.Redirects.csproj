@@ -37,8 +37,7 @@
     <Compile Include="Pipelines\HttpRequestBegin\RedirectItem.cs" />
     <Compile Include="Pipelines\HttpRequest\RedirectMapping.cs" />
     <Compile Include="Pipelines\HttpRequest\RedirectMapResolver.cs" />
-    <Compile Include="Repositories\IRedirectsRepository.cs" />
-    <Compile Include="Repositories\RedirectsRepository.cs" />
+    <Compile Include="RedirectsCache.cs" />
     <Compile Include="Templates.cs" />
     <Content Include="Views\**\*.cshtml" />
     <Content Include="App_Config\**\*.config" />
@@ -58,4 +57,5 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(SolutionDir)\Deepend.build.dotnet.props" Condition="Exists('$(SolutionDir)\Deepend.build.dotnet.props')" />
 </Project>
