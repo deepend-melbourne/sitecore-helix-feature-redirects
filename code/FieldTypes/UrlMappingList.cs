@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using Sitecore.Diagnostics;
+using Sitecore.Foundation.SitecoreExtensions.Extensions;
 using Sitecore.Text;
 
 namespace Sitecore.Feature.Redirects.FieldTypes
@@ -35,21 +36,15 @@ namespace Sitecore.Feature.Redirects.FieldTypes
             }
 
             var values = HttpContext.Current.Handler is Page page ? page.Request.Form : new NameValueCollection();
-            var keys = values.Keys.Cast<string>()
+            var dict = values.Keys.Cast<string>()
                 .Where(ent => !string.IsNullOrEmpty(ent))
                 .Where(ent => ent.StartsWith(ID + "_Param", StringComparison.InvariantCulture))
-                .Where(key => !key.EndsWith("_value", StringComparison.InvariantCulture));
+                .Where(ent => !ent.EndsWith("_value", StringComparison.InvariantCulture))
+                .Where(ent => !string.IsNullOrEmpty(values[ent]))
+                .ToDictionary(ent => values[ent], ent => values[$"{ent}_value"])
+                .ToNameValueCollection();
 
-            var urlString = new UrlString();
-            foreach (var key in keys)
-            {
-                var mapKey = values[key];
-                var mapValue = values[key + "_value"];
-                if (!string.IsNullOrEmpty(mapKey))
-                {
-                    urlString[mapKey] = mapValue ?? string.Empty;
-                }
-            }
+            var urlString = new UrlString(dict);
 
             var value = urlString.ToString();
             if (Value != value)
