@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Web;
 using System.Web.UI;
 using Sitecore.Diagnostics;
@@ -14,73 +15,72 @@ namespace Sitecore.Feature.Redirects.FieldTypes
 
         protected override void OnLoad(EventArgs e)
         {
-            Assert.ArgumentNotNull(e, "e");
+            Assert.ArgumentNotNull(e, nameof(e));
+
             if (Sitecore.Context.ClientPage.IsEvent)
             {
-                this.LoadValue();
-                return;
+                LoadValue();
             }
-
-            this.BuildControl();
+            else
+            {
+                BuildControl();
+            }
         }
 
         protected virtual void LoadValue()
         {
-            if (this.ReadOnly || this.Disabled)
+            if (ReadOnly || Disabled)
             {
                 return;
             }
 
-            var nameValueCollection = HttpContext.Current.Handler is Page page ? page.Request.Form : new NameValueCollection();
+            var values = HttpContext.Current.Handler is Page page ? page.Request.Form : new NameValueCollection();
+            var keys = values.Keys.Cast<string>()
+                .Where(ent => !string.IsNullOrEmpty(ent))
+                .Where(ent => ent.StartsWith(ID + "_Param", StringComparison.InvariantCulture))
+                .Where(key => !key.EndsWith("_value", StringComparison.InvariantCulture));
+
             var urlString = new UrlString();
-            foreach (var obj in nameValueCollection.Keys)
+            foreach (var key in keys)
             {
-                var text = (string)obj;
-                if (!string.IsNullOrEmpty(text) && text.StartsWith(this.ID + "_Param", StringComparison.InvariantCulture) && !text.EndsWith("_value", StringComparison.InvariantCulture))
+                var mapKey = values[key];
+                var mapValue = values[key + "_value"];
+                if (!string.IsNullOrEmpty(mapKey))
                 {
-                    var text2 = nameValueCollection[text];
-                    var text3 = nameValueCollection[text + "_value"];
-                    if (!string.IsNullOrEmpty(text2))
-                    {
-                        urlString[text2] = text3 ?? string.Empty;
-                    }
+                    urlString[mapKey] = mapValue ?? string.Empty;
                 }
             }
 
-            var text4 = urlString.ToString();
-            if (this.Value != text4)
+            var value = urlString.ToString();
+            if (Value != value)
             {
-                this.Value = text4;
-                this.SetModified();
+                Value = value;
+                SetModified();
             }
         }
 
         protected virtual void BuildControl()
         {
-            var urlString = new UrlString
+            var urlString = new UrlString { Query = Value };
+            var keys = urlString.Parameters.Keys.Cast<string>()
+                .Where(ent => !string.IsNullOrEmpty(ent));
+
+            foreach (var key in keys)
             {
-                Query = this.Value
-            };
-            foreach (var obj in urlString.Parameters.Keys)
-            {
-                var text = (string)obj;
-                if (text.Length > 0)
-                {
-                    this.Controls.Add(new LiteralControl(this.BuildParameterKeyValue(text, urlString.Parameters[text])));
-                }
+                Controls.Add(new LiteralControl(BuildParameterKeyValue(key, urlString.Parameters[key])));
             }
 
-            this.Controls.Add(new LiteralControl(this.BuildParameterKeyValue(string.Empty, string.Empty)));
+            Controls.Add(new LiteralControl(BuildParameterKeyValue(string.Empty, string.Empty)));
         }
 
         [UsedImplicitly]
         protected new void ParameterChange()
         {
             var clientPage = Sitecore.Context.ClientPage;
-            if (clientPage.ClientRequest.Source == StringUtil.GetString(clientPage.ServerProperties[this.ID + "_LastParameterID"]) && !string.IsNullOrEmpty(clientPage.ClientRequest.Form[clientPage.ClientRequest.Source]))
+            if (clientPage.ClientRequest.Source == StringUtil.GetString(clientPage.ServerProperties[ID + "_LastParameterID"]) && !string.IsNullOrEmpty(clientPage.ClientRequest.Form[clientPage.ClientRequest.Source]))
             {
-                var value = this.BuildParameterKeyValue(string.Empty, string.Empty);
-                clientPage.ClientResponse.Insert(this.ID, "beforeEnd", value);
+                var value = BuildParameterKeyValue(string.Empty, string.Empty);
+                clientPage.ClientResponse.Insert(ID, "beforeEnd", value);
             }
 
             clientPage.ClientResponse.SetReturnValue(true);
@@ -88,16 +88,17 @@ namespace Sitecore.Feature.Redirects.FieldTypes
 
         protected virtual string BuildParameterKeyValue(string key, string value)
         {
-            Assert.ArgumentNotNull(key, "key");
-            Assert.ArgumentNotNull(value, "value");
-            var uniqueID = GetUniqueID(this.ID + "_Param");
-            Sitecore.Context.ClientPage.ServerProperties[this.ID + "_LastParameterID"] = uniqueID;
-            var clientEvent = Sitecore.Context.ClientPage.GetClientEvent(this.ID + ".ParameterChange");
-            var text = this.ReadOnly ? " readonly=\"readonly\"" : string.Empty;
-            var text2 = this.Disabled ? " disabled=\"disabled\"" : string.Empty;
-            var arg = this.IsVertical ? "</tr><tr>" : string.Empty;
+            Assert.ArgumentNotNull(key, nameof(key));
+            Assert.ArgumentNotNull(value, nameof(value));
 
-            return string.Format("<table width=\"100%\" class='scAdditionalParameters'><tr><td>{0}</td>{2}<td width=\"100%\">{1}</td></tr></table>", $"<input id=\"{uniqueID}\" name=\"{uniqueID}\" type=\"text\"{text}{text2} style=\"{this.NameStyle}\" value=\"{StringUtil.EscapeQuote(key)}\" onchange=\"{clientEvent}\"/>", this.GetValueHtmlControl(uniqueID, StringUtil.EscapeQuote(HttpUtility.UrlDecode(value))), arg);
+            var uniqueID = GetUniqueID(ID + "_Param");
+            Sitecore.Context.ClientPage.ServerProperties[ID + "_LastParameterID"] = uniqueID;
+            var clientEvent = Sitecore.Context.ClientPage.GetClientEvent(ID + ".ParameterChange");
+            var readOnlyAttr = ReadOnly ? " readonly=\"readonly\"" : string.Empty;
+            var disabledAttr = Disabled ? " disabled=\"disabled\"" : string.Empty;
+            var arg = IsVertical ? "</tr><tr>" : string.Empty;
+
+            return string.Format("<table width=\"100%\" class='scAdditionalParameters'><tr><td>{0}</td>{2}<td width=\"100%\">{1}</td></tr></table>", $"<input id=\"{uniqueID}\" name=\"{uniqueID}\" type=\"text\"{readOnlyAttr}{disabledAttr} style=\"{NameStyle}\" value=\"{StringUtil.EscapeQuote(key)}\" onchange=\"{clientEvent}\"/>", GetValueHtmlControl(uniqueID, StringUtil.EscapeQuote(HttpUtility.UrlDecode(value))), arg);
         }
     }
 }
