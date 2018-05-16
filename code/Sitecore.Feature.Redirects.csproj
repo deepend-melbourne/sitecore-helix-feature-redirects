@@ -34,6 +34,7 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="EventHandlers\RedirectMapCacheClearer.cs" />
+    <Compile Include="FieldTypes\UrlMappingList.cs" />
     <Compile Include="Pipelines\HttpRequestBegin\RedirectItem.cs" />
     <Compile Include="Pipelines\HttpRequest\RedirectMapping.cs" />
     <Compile Include="Pipelines\HttpRequest\RedirectMapResolver.cs" />
