@@ -40,11 +40,11 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequestBegin
                 if (linkField.IsInternal && linkField.TargetItem != null)
                 {
                     var siteInfo = linkField.TargetItem.GetSite();
-                    var defaultOptions = UrlOptions.DefaultOptions;
-                    defaultOptions.Site = SiteContextFactory.GetSiteContext(siteInfo.Name);
-                    defaultOptions.AlwaysIncludeServerUrl = true;
+                    var urlOptions = UrlOptions.DefaultOptions;
+                    urlOptions.Site = SiteContextFactory.GetSiteContext(siteInfo.Name);
+                    urlOptions.AlwaysIncludeServerUrl = true;
 
-                    return LinkManager.GetItemUrl(linkField.TargetItem, defaultOptions) + (string.IsNullOrEmpty(linkField.QueryString) ? string.Empty : $"?{linkField.QueryString}");
+                    return LinkManager.GetItemUrl(linkField.TargetItem, urlOptions) + (string.IsNullOrEmpty(linkField.QueryString) ? string.Empty : $"?{linkField.QueryString}");
                 }
                 else
                 {
