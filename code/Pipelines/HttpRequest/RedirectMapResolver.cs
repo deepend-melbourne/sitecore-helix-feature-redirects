@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Caching;
-using Sitecore.Data.Items;
 using Sitecore.Diagnostics;
 using Sitecore.Foundation.SitecoreExtensions.Extensions;
 using Sitecore.Pipelines.HttpRequest;
@@ -100,12 +99,11 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
                 {
                     return item.Axes.GetDescendants()
                         .Where(i => i.IsDerived(Templates.RedirectMap.ID))
-                        .Cast<Item>()
                         .SelectMany(ent =>
                         {
                             if (!Enum.TryParse<RedirectType>(ent[Templates.RedirectMap.Fields.RedirectType], out var redirectType))
                             {
-                                Log.Info(string.Format("Redirect map {0} does not specify redirect type.", ent.Paths.FullPath), this);
+                                Log.Info(string.Format("Redirect map '{0}' does not specify redirect type.", ent.Paths.FullPath), this);
 
                                 return null;
                             }
@@ -143,7 +141,8 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
                                         };
                                     });
                         })
-                        .Where(ent => ent != null);
+                        .Where(ent => ent != null)
+                        .ToList();
                 }
             }
 
