@@ -68,14 +68,23 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
 
         RedirectMapping FindMapping(string filePath)
         {
-            var redirectMap = (HttpRuntime.Cache[AllMappingsPrefix] as IEnumerable<RedirectMapping>) ?? BuildMap();
-
-            if (CacheExpiration > 0)
+            try
             {
-                HttpRuntime.Cache.Add(AllMappingsPrefix, redirectMap, null, DateTime.UtcNow.AddMinutes(CacheExpiration), TimeSpan.Zero, CacheItemPriority.Normal, null);
-            }
+                var redirectMap = (HttpRuntime.Cache[AllMappingsPrefix] as IEnumerable<RedirectMapping>) ?? BuildMap();
 
-            return redirectMap.FirstOrDefault(ent => ((!ent.IsRegex && ent.Pattern == filePath) || (ent.IsRegex && ent.Regex.IsMatch(filePath))));
+                if (CacheExpiration > 0)
+                {
+                    HttpRuntime.Cache.Add(AllMappingsPrefix, redirectMap, null, DateTime.UtcNow.AddMinutes(CacheExpiration), TimeSpan.Zero, CacheItemPriority.Normal, null);
+                }
+
+                return redirectMap.FirstOrDefault(ent => ((!ent.IsRegex && ent.Pattern == filePath) || (ent.IsRegex && ent.Regex.IsMatch(filePath))));
+            }
+            catch (NullReferenceException)
+            {
+                Log.Error($"NullReferenceException looking up redirect for '{filePath}'", this);
+
+                return null;
+            }
         }
 
         void Redirect301(HttpResponse response, string url)
