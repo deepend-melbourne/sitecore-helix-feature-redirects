@@ -1,6 +1,9 @@
+using System;
 using System.Web;
 using Sitecore.Data.Fields;
 using Sitecore.Data.Items;
+using Sitecore.Diagnostics;
+using Sitecore.Feature.Redirects.Pipelines.HttpRequest;
 using Sitecore.Foundation.SitecoreExtensions.Extensions;
 using Sitecore.Links;
 using Sitecore.Pipelines.HttpRequest;
@@ -22,13 +25,40 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequestBegin
             if (item.IsDerived(Templates.Redirect.ID))
             {
                 var redirectUrl = GetRedirectUrl(item);
+                if (!Enum.TryParse<RedirectType>(item[Templates.Redirect.Fields.RedirectType], out var redirectType))
+                {
+                    Log.Info(string.Format("Redirect item {0} does not specify redirect type.", item.Paths.FullPath), this);
+
+                    return;
+                }
 
                 if (!string.IsNullOrEmpty(redirectUrl))
                 {
-                    HttpContext.Current.Response.Redirect(redirectUrl, true);
+                    switch (redirectType)
+                    {
+                        case RedirectType.Redirect301:
+                            Redirect301(HttpContext.Current.Response, redirectUrl);
+                            break;
+                        case RedirectType.Redirect302:
+                            HttpContext.Current.Response.Redirect(redirectUrl, true);
+                            break;
+                        case RedirectType.ServerTransfer:
+                            HttpContext.Current.Server.TransferRequest(redirectUrl);
+                            break;
+                    }
+
                     args.AbortPipeline();
                 }
             }
+        }
+
+        static void Redirect301(HttpResponse response, string url)
+        {
+            response.ClearContent();
+
+            response.Status = "301 Moved Permanently";
+            response.AddHeader("Location", url);
+            response.End();
         }
 
         static string GetRedirectUrl(Item item)
@@ -40,11 +70,11 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequestBegin
                 if (linkField.IsInternal && linkField.TargetItem != null)
                 {
                     var siteInfo = linkField.TargetItem.GetSite();
-                    var defaultOptions = UrlOptions.DefaultOptions;
-                    defaultOptions.Site = SiteContextFactory.GetSiteContext(siteInfo.Name);
-                    defaultOptions.AlwaysIncludeServerUrl = true;
+                    var urlOptions = UrlOptions.DefaultOptions;
+                    urlOptions.Site = SiteContextFactory.GetSiteContext(siteInfo.Name);
+                    urlOptions.AlwaysIncludeServerUrl = true;
 
-                    return LinkManager.GetItemUrl(linkField.TargetItem, defaultOptions) + (string.IsNullOrEmpty(linkField.QueryString) ? string.Empty : $"?{linkField.QueryString}");
+                    return LinkManager.GetItemUrl(linkField.TargetItem, urlOptions) + (string.IsNullOrEmpty(linkField.QueryString) ? string.Empty : $"?{linkField.QueryString}");
                 }
                 else
                 {

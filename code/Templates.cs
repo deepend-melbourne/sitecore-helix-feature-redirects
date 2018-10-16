@@ -10,6 +10,8 @@ namespace Sitecore.Feature.Redirects
 
             public struct Fields
             {
+                public static ID RedirectType { get; } = new ID("{D388FEA4-F860-4BA4-B6AC-D83D6851E2FA}");
+
                 public static ID RedirectUrl { get; } = new ID("{22753447-BE25-4035-A3C9-7F875AFE8E57}");
             }
         }

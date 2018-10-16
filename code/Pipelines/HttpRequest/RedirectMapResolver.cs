@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Caching;
-using Sitecore.Data.Items;
 using Sitecore.Diagnostics;
 using Sitecore.Foundation.SitecoreExtensions.Extensions;
 using Sitecore.Pipelines.HttpRequest;
@@ -75,14 +74,23 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
 
         RedirectMapping FindMapping(string filePath)
         {
-            var redirectMap = (HttpRuntime.Cache[AllMappingsPrefix] as IEnumerable<RedirectMapping>) ?? BuildMap();
-
-            if (CacheExpiration > 0)
+            try
             {
-                HttpRuntime.Cache.Add(AllMappingsPrefix, redirectMap, null, DateTime.UtcNow.AddMinutes(CacheExpiration), TimeSpan.Zero, CacheItemPriority.Normal, null);
-            }
+                var redirectMap = (HttpRuntime.Cache[AllMappingsPrefix] as IEnumerable<RedirectMapping>) ?? BuildMap();
 
-            return redirectMap.FirstOrDefault(ent => ((!ent.IsRegex && ent.Pattern == filePath) || (ent.IsRegex && ent.Regex.IsMatch(filePath))));
+                if (CacheExpiration > 0)
+                {
+                    HttpRuntime.Cache.Add(AllMappingsPrefix, redirectMap, null, DateTime.UtcNow.AddMinutes(CacheExpiration), TimeSpan.Zero, CacheItemPriority.Normal, null);
+                }
+
+                return redirectMap.FirstOrDefault(ent => ((!ent.IsRegex && ent.Pattern == filePath) || (ent.IsRegex && ent.Regex.IsMatch(filePath))));
+            }
+            catch (NullReferenceException)
+            {
+                Log.Error($"NullReferenceException looking up redirect for '{filePath}'", this);
+
+                return null;
+            }
         }
 
         void Redirect301(HttpResponse response, string url)
@@ -106,12 +114,11 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
                 {
                     return item.Axes.GetDescendants()
                         .Where(i => i.IsDerived(Templates.RedirectMap.ID))
-                        .Cast<Item>()
                         .SelectMany(ent =>
                         {
                             if (!Enum.TryParse<RedirectType>(ent[Templates.RedirectMap.Fields.RedirectType], out var redirectType))
                             {
-                                Log.Info(string.Format("Redirect map {0} does not specify redirect type.", ent.Paths.FullPath), this);
+                                Log.Info(string.Format("Redirect map '{0}' does not specify redirect type.", ent.Paths.FullPath), this);
 
                                 return null;
                             }
@@ -149,7 +156,8 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
                                         };
                                     });
                         })
-                        .Where(ent => ent != null);
+                        .Where(ent => ent != null)
+                        .ToList();
                 }
             }
 
