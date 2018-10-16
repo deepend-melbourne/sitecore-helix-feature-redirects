@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,6 +24,12 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
         public override void Process(HttpRequestArgs args)
         {
             if (Context.Item != null || Context.Database == null || Context.Site == null || IsFile(Context.Request.FilePath) || HttpContext.Current == null)
+            {
+                return;
+            }
+
+            // Don't override any item resolving in the content/experience editors because this breaks things like the link picker
+            if (Context.Site.Name?.Equals("shell", StringComparison.OrdinalIgnoreCase) ?? false)
             {
                 return;
             }
