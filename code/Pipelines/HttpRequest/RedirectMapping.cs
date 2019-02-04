@@ -50,11 +50,6 @@ namespace Sitecore.Feature.Redirects.Pipelines.HttpRequest
                 target += httpContext.Request.Url.Query;
             }
 
-            if (!string.IsNullOrEmpty(Context.Site.VirtualFolder))
-            {
-                target = StringUtil.EnsurePostfix('/', Context.Site.VirtualFolder) + target.TrimStart(new char[] { '/' });
-            }
-
             return target;
         }
     }
