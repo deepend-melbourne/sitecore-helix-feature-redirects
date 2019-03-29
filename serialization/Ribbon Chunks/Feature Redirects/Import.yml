@@ -1,0 +1,16 @@
+﻿---
+ID: "689302e6-f3b0-4f8f-8c1c-097ab6d6aa0b"
+Parent: "6fce048a-6d5d-4e0a-8bf7-d5ce3c040144"
+Template: "1db34c92-03b0-4475-9a39-da14e4d9d8fc"
+Path: /sitecore/content/Applications/Content Editor/Ribbons/Chunks/Feature Redirects/Import
+DB: core
+Languages:
+- Language: en
+  Versions:
+  - Version: 1
+    Fields:
+    - ID: "25bed78c-4957-4165-998a-ca1b52f67497"
+      Value: "20190329T033055:636894270555213902Z"
+    - ID: "4df6da21-e745-444c-956e-1d4a96ab8821"
+      Hint: Header
+      Value: Import

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.4/css/bulma.min.css" />
+    <style>
+      body {
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <form id="form">
+      <div class="field">
+        <div class="control">
+          <div class="file" id="file_container">
+            <label class="file-label">
+              <input class="file-input" type="file" name="csv" id="file_input" />
+              <span class="file-cta">
+                <span class="file-icon">
+                  <i class="fas fa-upload"></i>
+                </span>
+                <span class="file-label">
+                  Choose a file&hellip;
+                </span>
+              </span>
+              <span class="file-name" style="display: none" id="file_name"> </span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <div id="message" style="display: none">
+          <div id="message_body" class="message-body"></div>
+        </div>
+      </div>
+      <div class="field is-grouped is-grouped-centered">
+        <div class="control">
+          <button class="button is-primary" type="submit" id="submit_button" disabled="true">Import</button>
+        </div>
+      </div>
+    </form>
+    <script>
+      let redirects = {}
+
+      const item = location.search
+        .substr(1)
+        .split('&')
+        .map(ent => ent.split('='))
+        .reduce((p, c) => ({ ...p, [c[0]]: c[1] }), {}).items
+
+      const form = document.getElementById('form')
+      const input = document.getElementById('file_input')
+      const name = document.getElementById('file_name')
+      const container = document.getElementById('file_container')
+      const button = document.getElementById('submit_button')
+      const message_container = document.getElementById('message')
+      const message_body = document.getElementById('message_body')
+      form.onsubmit = ev => {
+        ev.preventDefault()
+
+        const params = {
+          method: 'POST',
+          body: JSON.stringify({ id: item, redirects }),
+          headers: {
+            'Content-type': 'application/json',
+          },
+        }
+        submit_button.className = 'button is-primary is-loading'
+        fetch('/api/redirects/import', params)
+          .then(() => {
+            message_container.className = 'message is-success'
+            message_body.className = 'message-body content'
+            message_body.innerHTML = '<p>Redirects imported successfully.</p><p>Please refresh this item to see the updates reflected.</p>'
+            submit_button.disabled = 'disabled'
+            submit_button.className = 'button is-primary'
+          })
+          .catch(() => {
+            submit_button.className = 'button is-primary'
+          })
+      }
+
+      input.onchange = ev => {
+        if (ev.target.files) {
+          const file = ev.target.files[0]
+          file_name.innerText = file.name
+          file_name.style.display = 'block'
+          file_container.className += ' has-name'
+
+          process(file)
+        }
+      }
+
+      const validate = res => {
+        message_container.style.display = 'none'
+        message_container.className = 'message'
+        message_body.className = 'message-body'
+
+        if (res.errors.length > 0) {
+          message_container.style.display = 'block'
+          message_container.className = 'message is-danger'
+          message_body.className = 'message-body content'
+          message_body.innerHTML = `There were problems processing the CSV file.
+              <ul>
+                ${res.errors.map(err => `<li>${err.message} ${err.row ? `(row: ${err.row})` : ''}</li>`).join('')}
+              </ul>`
+          return false
+        } else {
+          const invalidRows = res.data
+            .map((arr, row) => ({ valid: arr.length == 2, row, fields: arr.length }))
+            .filter(ent => !ent.valid)
+
+          if (invalidRows.length > 0) {
+            message_container.style.display = 'block'
+            message_container.className = 'message is-danger'
+            message_body.className = 'message-body content'
+            message_body.innerHTML = `There was invalid data in the CSV file.
+              <ul>
+                ${invalidRows.map(err => `<li>Row ${err.row} has ${err.fields} fields (should be: 2)</li>`).join('')}
+              </ul>`
+            return false
+          }
+        }
+
+        return true
+      }
+
+      const process = file => {
+        submit_button.disabled = 'disabled'
+        Papa.parse(file, {
+          complete: res => {
+            if (validate(res)) {
+              redirects = res.data.reduce((p, c) => ({ ...p, [c[0]]: c[1] }), {})
+
+              message_container.style.display = 'block'
+              message_container.className = ''
+              message_body.className = ''
+              message_body.innerHTML = `<p class="field">Please review the below table to ensure the redirections are correct.</p>
+              <table class="table is-hoverable is-striped is-bordered is-fullwidth">
+                <thead>
+                <tr>
+                  <th>From</th>
+                  <th>To</th>
+                </tr>
+                </thead>
+                <tbody>
+                ${Object.keys(redirects)
+                  .map(k => `<tr><td>${k}</td><td>${redirects[k]}</td></tr>`)
+                  .join('')}
+                </tbody>
+              </table>
+              <small class="field">n.b. if there are multiple redirects with the same "From" URL, only the latest one will be accepted.</small>`
+
+              submit_button.disabled = null
+            }
+          },
+        })
+      }
+    </script>
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.6.3/papaparse.min.js"></script>
+  </body>
+</html>
