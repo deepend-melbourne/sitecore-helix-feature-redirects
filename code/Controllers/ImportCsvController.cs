@@ -10,7 +10,8 @@ namespace Sitecore.Feature.Redirects.Controllers
     {
         public ActionResult Import(ImportCsvRequest request)
         {
-            var item = Context.Database.GetItem(new ID(request.Id));
+            var master = Sitecore.Configuration.Factory.GetDatabase("master");
+            var item = master.GetItem(new ID(request.Id));
 
             var urlString = new UrlString
             {
